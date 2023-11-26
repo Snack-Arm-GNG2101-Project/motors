@@ -1,64 +1,83 @@
 #include <Arduino.h>
-#include <Stepper.h>
 
 #define BAUD 9600
-#define NUM_OF_CASES 5
-#define STEPS_PER_REV 100
-#define SIGNAL_BUTTON_PIN 34
-#define MOTOR_SPEED 150
+#define WHEEL_DIAMETER_INCHES 3.0f
+#define X_MOTOR_RPM 30.0f // MAX 30 RPM
+#define Z_MOTOR_RPM 15.0f // MAX 30 RPM
+#define X_DISTANCE_INCHES 27.0f
+#define Z_PICK_UP_DISTANCE_INCHES 6.0f
+#define Z_DROP_OFF_DISTANCE_INCHES 2.0f
+#define RED_BUTTON_PIN 13
+#define X_MOTOR_PIN 14
+#define Z_MOTOR_PIN 15
 
-// for your motor
+uint32_t timeToClearDistanceMS;
+uint8_t motorState;
+uint32_t startTimeMS, endTimeMS;
 
-// initialize the stepper library on pins 8 through 11:
-Stepper myStepper1(STEPS_PER_REV, 25,27,26,14);
-Stepper myStepper2(STEPS_PER_REV,10,32,13,33);
-Stepper myStepper3(STEPS_PER_REV, 21,19,22,23);
+float rpmToTimeMS(float distanceInches, float rpm) {
+    // v = circumference (inches) / min
+    // v = d/t
+    // t = d/v
+    float wheelCircumference = 2 * (WHEEL_DIAMETER_INCHES / 2) * PI;
+    float angularVelocity = wheelCircumference * rpm;
+    return (distanceInches / angularVelocity) * 60000;
+}
 
-uint8_t motorswitch = 0;
-uint8_t change;
+// this function controls behavior of the arm during the entire process of picking up the snack and bringing it back
+void pickUpSnack() {
+    uint32_t pickUpTimeMS = floor(rpmToTimeMS(Z_PICK_UP_DISTANCE_INCHES, Z_MOTOR_RPM));
+    uint32_t dropOffTimeMS = floor(rpmToTimeMS(Z_DROP_OFF_DISTANCE_INCHES, Z_MOTOR_RPM));
+
+    Serial.println("TURNING THE MOTOR TO GO DOWN...");
+    delay(pickUpTimeMS);
+    Serial.println("done.");
+
+    Serial.println("TURNING THE MOTOR TO GO UP...");
+    delay(pickUpTimeMS);
+    Serial.println("done.");
+
+    Serial.println("TURNING THE MOTOR TO GO BACK...");
+    delay(timeToClearDistanceMS);
+    Serial.println("done.");
+
+    Serial.println("TURNING THE MOTOR TO DROP OFF THE SNACK...");
+    delay(dropOffTimeMS);
+    Serial.println("done.");
+
+    Serial.println("BRINGING THE MOTOR BACK UP...");
+    delay(dropOffTimeMS);
+    Serial.println("done.");
+}
 
 void setup() {
-    // set the speed at 70 rpm:
-    myStepper1.setSpeed(MOTOR_SPEED);
-    myStepper2.setSpeed(MOTOR_SPEED);
-    myStepper3.setSpeed(MOTOR_SPEED);
-
-    // initialize the serial port:
     Serial.begin(BAUD);
+    pinMode(RED_BUTTON_PIN, INPUT);
+    pinMode(X_MOTOR_PIN, OUTPUT);
+    pinMode(Z_MOTOR_PIN, OUTPUT);
+    timeToClearDistanceMS = floor(rpmToTimeMS(X_DISTANCE_INCHES, X_MOTOR_RPM));
+    motorState = 0;
+    startTimeMS = millis();
 }
 
 void loop() {
-    // step one revolution  in one direction:
-    Serial.println(change);
-    change = analogRead(SIGNAL_BUTTON_PIN);
-
-    if(change == 255 && motorswitch != NUM_OF_CASES){
-        motorswitch += 1;
-    }
-    else if(change == 255 && motorswitch == NUM_OF_CASES){
-        motorswitch = 0;
+    int buttonPressed = digitalRead(RED_BUTTON_PIN);
+    if (buttonPressed) {
+        pickUpSnack();
+        motorState = 0;
+        startTimeMS = millis();
     }
 
-    switch(motorswitch){
-        case 0:
-            myStepper1.step(STEPS_PER_REV);
-            break;
-        case 1:
-            myStepper1.step(-STEPS_PER_REV);
-            break;
-        case 2:
-            myStepper2.step(-STEPS_PER_REV);
-            break;
-        case 3:
-            myStepper2.step(STEPS_PER_REV);
-            break;
-        case 4:
-            myStepper3.step(-STEPS_PER_REV);
-            break;
-        case 5:
-            myStepper3.step(STEPS_PER_REV);
-            break;
-        default:
-            break;
+    if (motorState == 0) {
+        Serial.println("Turning the motor left...");
+    }
+    else if (motorState == 1) {
+        Serial.println("Turning the motor right...");
+    }
+
+    endTimeMS = millis();
+    if (endTimeMS - startTimeMS >= timeToClearDistanceMS) {
+        motorState = !motorState;
+        startTimeMS = millis();
     }
 }
