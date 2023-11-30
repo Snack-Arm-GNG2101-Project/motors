@@ -3,22 +3,22 @@
 
 #define BAUD 9600
 #define WHEEL_DIAMETER_INCHES 3.0f
-#define X_MOTOR_RPM 40.0f // MAX 30 RPM
-#define Z_MOTOR_RPM 40.0f // MAX 30 RPM
+#define X_MOTOR_RPM 150.0f // MAX 30 RPM
+#define Z_MOTOR_RPM 150.0f // MAX 30 RPM
 #define X_DISTANCE_INCHES 27.0f
 #define Z_PICK_UP_DISTANCE_INCHES 6.0f
 #define Z_DROP_OFF_DISTANCE_INCHES 2.0f
-#define RED_BUTTON_PIN 13
+#define RED_BUTTON_PIN 25
 #define X_MOTOR_PIN_1 2
-#define X_MOTOR_PIN_2 0
-#define X_MOTOR_PIN_3 4
+#define X_MOTOR_PIN_2 4
+#define X_MOTOR_PIN_3 0
 #define X_MOTOR_PIN_4 9
 #define Z_MOTOR_PIN_1 10
-#define Z_MOTOR_PIN_2 5
-#define Z_MOTOR_PIN_3 18
+#define Z_MOTOR_PIN_2 18
+#define Z_MOTOR_PIN_3 5
 #define Z_MOTOR_PIN_4 23
 
-#define STEPS_PER_REV 130 // mess with this later
+#define STEPS_PER_REV 100 // mess with this later
 
 // defining the stepper motors
 Stepper xMotor(STEPS_PER_REV, X_MOTOR_PIN_1, X_MOTOR_PIN_2, X_MOTOR_PIN_3, X_MOTOR_PIN_4);
